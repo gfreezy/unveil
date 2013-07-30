@@ -10,25 +10,31 @@
 
 ;(function($) {
 
-  $.fn.unveil = function(threshold) {
+  $.unveil = function(options) {
 
+    var settings = $.extend({
+      threshold: 0,
+      selector: "img[data-src],img[data-src-retina]"
+    }, options);
     var $w = $(window),
-        th = threshold || 0,
+        th = settings.threshold,
+        selector = settings.selector,
         retina = window.devicePixelRatio > 1,
         attrib = retina? "data-src-retina" : "data-src",
-        images = this,
-        loaded,
-        inview,
         source;
 
-    this.one("unveil", function() {
-      source = this.getAttribute(attrib);
-      source = source || this.getAttribute("data-src");
-      if (source) this.setAttribute("src", source);
-    });
+    var loadImage = function($el) {
+      source = $el.attr(attrib);
+      source = source || $el.attr("data-src");
+      if (source) {
+        $el.attr("src", source);
+        return true;
+      }
+      return false;
+    };
 
     function unveil() {
-      inview = images.filter(function() {
+      inview = $(selector).not(".unveiled").filter(function() {
         var $e = $(this),
             wt = $w.scrollTop(),
             wb = wt + $w.height(),
@@ -38,8 +44,11 @@
         return eb >= wt - th && et <= wb + th;
       });
 
-      loaded = inview.trigger("unveil");
-      images = images.not(loaded);
+      inview.each(function() {
+        if (loadImage($(this))) {
+          $(this).addClass("unveiled");
+        }
+      });
     }
 
     $w.scroll(unveil);
